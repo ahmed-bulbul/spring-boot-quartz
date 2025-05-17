@@ -4,15 +4,10 @@ import com.bulbul.spring.quartz.entity.Task;
 import com.bulbul.spring.quartz.job.TaskJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.CronScheduleBuilder;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
+import org.quartz.*;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -124,4 +119,14 @@ public class JobService {
         }
     }
 
+    public Date nextTrigger(Task task) {
+        try {
+            Trigger trigger = scheduler.getTrigger(new TriggerKey(task.getName() + "Trigger", task.getGroup()));
+            log.info("Next trigger for task {} - {} is: {}", task.getId(), task.getName(), trigger.getNextFireTime());
+            return trigger.getNextFireTime();
+        } catch (SchedulerException e) {
+            log.error("Error getting next trigger for task: {} - {}", task.getId(), task.getName(), e);
+            throw new RuntimeException(e);
+        }
+    }
 }

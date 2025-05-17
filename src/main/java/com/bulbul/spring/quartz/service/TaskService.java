@@ -1,6 +1,7 @@
 package com.bulbul.spring.quartz.service;
 
 import com.bulbul.spring.quartz.dto.request.CreateTaskRequest;
+import com.bulbul.spring.quartz.dto.response.TaskResponse;
 import com.bulbul.spring.quartz.entity.Task;
 import com.bulbul.spring.quartz.repository.TaskRepository;
 import jakarta.transaction.Transactional;
@@ -9,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.quartz.SchedulerException;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -81,5 +85,14 @@ public class TaskService {
 
     public void resumeAllJobs() {
         jobService.resumeAllJobs();
+    }
+
+    public List<Task> findAll() {
+        return taskRepository.findAll();
+    }
+
+    public Date nextTrigger(String id) {
+        Task task = taskRepository.findById(UUID.fromString(id)).orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        return jobService.nextTrigger(task);
     }
 }

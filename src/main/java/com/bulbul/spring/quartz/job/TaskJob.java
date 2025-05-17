@@ -17,11 +17,18 @@ public class TaskJob implements Job {
         String name = trigger.getKey().getName();  // get name from trigger
         String group = trigger.getKey().getGroup(); // get group from trigger
 
+        if(group.equals("MyGroup2")){
+            callMyGroup2();
+        }
+
         log.info("Running TaskJob -> ID: {}, Name: {}, Group: {}", id, name, group);
 
-        ping();
+        //ping();
     }
 
+    private void callMyGroup2() {
+        log.info("Calling MyGroup2");
+    }
 
 
     private void ping() {
