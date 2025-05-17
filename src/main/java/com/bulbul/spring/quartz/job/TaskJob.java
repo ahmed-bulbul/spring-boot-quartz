@@ -17,13 +17,15 @@ public class TaskJob implements Job {
         String name = trigger.getKey().getName();  // get name from trigger
         String group = trigger.getKey().getGroup(); // get group from trigger
 
-        if(group.equals("MyGroup2")){
-            callMyGroup2();
+        JobHandler handler = JobHandlerFactory.getHandler(group);
+
+        if (handler != null) {
+            handler.handle(id, name, group);
+        } else {
+            log.warn("No handler found for group: {}", group);
         }
 
-        log.info("Running TaskJob -> ID: {}, Name: {}, Group: {}", id, name, group);
-
-        //ping();
+        log.info("Finished TaskJob -> ID: {}, Name: {}, Group: {}", id, name, group);
     }
 
     private void callMyGroup2() {
