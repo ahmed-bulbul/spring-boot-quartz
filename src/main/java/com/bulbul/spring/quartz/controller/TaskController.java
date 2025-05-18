@@ -2,6 +2,7 @@ package com.bulbul.spring.quartz.controller;
 
 import com.bulbul.spring.quartz.dto.request.CreateTaskRequest;
 import com.bulbul.spring.quartz.dto.response.TaskResponse;
+import com.bulbul.spring.quartz.entity.Task;
 import com.bulbul.spring.quartz.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -110,6 +111,19 @@ public class TaskController {
         }
 
         return jobList;
+    }
+
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TaskResponse> findById(@PathVariable("id") final String id) {
+        return new ResponseEntity<>(TaskResponse.convert(taskService.findById(id)), HttpStatus.OK);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Integer> update(@PathVariable("id") final String id,
+                                       @RequestBody @Valid final CreateTaskRequest request) {
+        Task task = taskService.update(id, request);
+        return new ResponseEntity<>(task.getId().hashCode(), HttpStatus.OK);
     }
 
 

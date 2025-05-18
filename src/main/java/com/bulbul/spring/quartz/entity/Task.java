@@ -25,4 +25,10 @@ public class Task extends AbstractBaseEntity {
 
     @Column(name = "cron_expression")
     private String cronExpression;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "trigger_day")
+    private Integer triggerDay;
 }

@@ -1,6 +1,12 @@
 package com.bulbul.spring.quartz.controller;
 
 
+import com.bulbul.spring.quartz.dto.request.CreateTaskRequest;
+import com.bulbul.spring.quartz.entity.Task;
+import com.bulbul.spring.quartz.job.TaskJob;
+import com.bulbul.spring.quartz.service.JobService;
+import com.bulbul.spring.quartz.service.TaskService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.quartz.*;
 import org.springframework.http.HttpStatus;
@@ -15,6 +21,8 @@ import java.util.List;
 public class QuartzStatusController {
 
     private final Scheduler scheduler;
+    private final TaskService taskService;
+    private final JobService jobService;
 
     // Check if scheduler is running
     @GetMapping("/scheduler-status")
@@ -69,6 +77,75 @@ public class QuartzStatusController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to shut down scheduler: " + e.getMessage());
         }
+
     }
+
+    @Transactional
+    @PostMapping("/updateJob")
+    public ResponseEntity<String> updateQuartzJob(
+            @RequestParam String jobName,
+            @RequestParam String jobGroup,
+            @RequestParam String triggerName,
+            @RequestParam String cronExpression,
+            @RequestParam(required = false) Integer triggerDay,
+            @RequestParam(required = false) String description) {
+
+        try {
+            Task task = taskService.findById(jobName);
+            JobKey oldJobKey = jobService.getTaskJobKey(task);
+            TriggerKey oldTriggerKey = new TriggerKey(task.getName() + "Trigger", jobGroup); // old name
+
+            if (!scheduler.checkExists(oldJobKey)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Job not found.");
+            }
+
+            // ✅ Delete old trigger & job
+            scheduler.pauseTrigger(oldTriggerKey);
+            scheduler.unscheduleJob(oldTriggerKey);
+            scheduler.deleteJob(oldJobKey);
+
+            // ✅ Create new job detail
+            JobDetail newJobDetail = JobBuilder.newJob(TaskJob.class)
+                    .withIdentity(jobName, jobGroup) // reusing same ID
+                    .usingJobData("id", jobName)
+                    .usingJobData("name", triggerName)
+                    .usingJobData("taskGroup", jobGroup)
+                    .usingJobData("description", description)
+                    .build();
+
+            // ✅ New trigger with updated name
+            TriggerBuilder<CronTrigger> triggerBuilder = TriggerBuilder.newTrigger()
+                    .withIdentity(triggerName + "Trigger", jobGroup)
+                    .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
+                    .forJob(newJobDetail);
+
+            if (description != null) {
+                triggerBuilder.withDescription(description);
+            }
+
+            CronTrigger newTrigger = triggerBuilder.build();
+
+            // ✅ Reschedule with new job and trigger
+            scheduler.scheduleJob(newJobDetail, newTrigger);
+
+            // ✅ Update task info in DB
+            CreateTaskRequest request = CreateTaskRequest.builder()
+                    .name(triggerName)
+                    .group(jobGroup)
+                    .cronExpression(cronExpression)
+                    .description(description)
+                    .triggerDay(triggerDay)
+                    .build();
+
+            taskService.update(jobName, request);
+
+            return ResponseEntity.ok("Job and trigger updated successfully.");
+
+        } catch (SchedulerException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating job: " + e.getMessage());
+        }
+    }
+
 
 }

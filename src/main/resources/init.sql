@@ -11,6 +11,7 @@ SET search_path TO notification;
         "cron_expression" varchar(255),
         "group" varchar(255) not null,
         "name" varchar(255) not null,
+        "description" varchar(255),
         primary key ("id")
     );
 

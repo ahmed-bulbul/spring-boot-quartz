@@ -17,6 +17,11 @@ public class TaskResponse {
 
     private String cronExpression;
 
+    private String description;
+
+    private int triggerDay;
+
+
     /**
      * Convert to TaskResponse
      *
@@ -27,7 +32,9 @@ public class TaskResponse {
         return TaskResponse.builder()
             .id(task.getId().toString())
             .name(task.getName())
+            .description(task.getDescription())
             .group(task.getGroup())
+            .triggerDay(task.getTriggerDay())
             .cronExpression(task.getCronExpression())
             .build();
     }

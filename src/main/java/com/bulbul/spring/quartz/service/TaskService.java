@@ -5,6 +5,7 @@ import com.bulbul.spring.quartz.dto.response.TaskResponse;
 import com.bulbul.spring.quartz.entity.Task;
 import com.bulbul.spring.quartz.repository.TaskRepository;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.SchedulerException;
@@ -35,6 +36,8 @@ public class TaskService {
             .name(request.getName())
             .group(request.getGroup())
             .cronExpression(request.getCronExpression())
+            .description(request.getDescription())
+            .triggerDay(request.getTriggerDay())
             .build());
 
         try {
@@ -94,5 +97,19 @@ public class TaskService {
     public Date nextTrigger(String id) {
         Task task = taskRepository.findById(UUID.fromString(id)).orElseThrow(() -> new IllegalArgumentException("Task not found"));
         return jobService.nextTrigger(task);
+    }
+
+    public Task update(String id, CreateTaskRequest request) {
+        Task task = taskRepository.findById(UUID.fromString(id)).orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        task.setName(request.getName());
+        task.setGroup(request.getGroup());
+        task.setCronExpression(request.getCronExpression());
+        task.setDescription(request.getDescription());
+        task.setTriggerDay(request.getTriggerDay());
+        return taskRepository.save(task);
+    }
+
+    public Task findById(String id) {
+        return taskRepository.findById(UUID.fromString(id)).orElseThrow(() -> new IllegalArgumentException("Task not found"));
     }
 }

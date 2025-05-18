@@ -19,4 +19,8 @@ public class CreateTaskRequest {
     @NotEmpty(message = "Cron expression is required")
     @ValidCronExpression
     private String cronExpression;
+
+    private String description;
+
+    private Integer triggerDay;
 }

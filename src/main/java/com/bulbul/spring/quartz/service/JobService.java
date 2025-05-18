@@ -5,6 +5,8 @@ import com.bulbul.spring.quartz.job.TaskJob;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -31,6 +33,7 @@ public class JobService {
         Trigger trigger = TriggerBuilder.newTrigger()
                 .withIdentity(task.getName() + "Trigger", task.getGroup())
                 .withSchedule(CronScheduleBuilder.cronSchedule(task.getCronExpression()))
+                .withDescription(task.getDescription())
                 .build();
 
         scheduler.scheduleJob(jobDetail, trigger);
@@ -61,7 +64,7 @@ public class JobService {
      * @param task Task
      * @return JobKey
      */
-    private JobKey getTaskJobKey(Task task) {
+    public JobKey getTaskJobKey(Task task) {
         return new JobKey(task.getId().toString(), task.getGroup());
     }
 
@@ -80,6 +83,9 @@ public class JobService {
     public void resumeTaskJob(Task task) {
         try {
             JobKey jobKey = getTaskJobKey(task);
+            if (!scheduler.checkExists(jobKey)) {
+                log.error("Job does not exist: {}", task.getId());
+            }
             scheduler.resumeJob(jobKey);
             log.info("Task {} - {} resumed successfully", task.getId(), task.getName());
         } catch (SchedulerException e) {
