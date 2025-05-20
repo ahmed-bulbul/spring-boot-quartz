@@ -1,9 +1,11 @@
 package com.bulbul.spring.quartz.job.booking;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.springframework.data.relational.core.sql.In;
 
 import java.time.LocalDate;
 import java.util.UUID;
+
 
 public interface BookingCheckinProjection {
     Integer getUserId();

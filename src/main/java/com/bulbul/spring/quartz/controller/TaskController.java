@@ -3,12 +3,17 @@ package com.bulbul.spring.quartz.controller;
 import com.bulbul.spring.quartz.dto.request.CreateTaskRequest;
 import com.bulbul.spring.quartz.dto.response.TaskResponse;
 import com.bulbul.spring.quartz.entity.Task;
+import com.bulbul.spring.quartz.job.booking.BookingCheckinProjection;
+import com.bulbul.spring.quartz.repository.TaskRepository;
 import com.bulbul.spring.quartz.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +27,7 @@ import java.util.*;
 public class TaskController {
     private final TaskService taskService;
     private final Scheduler scheduler;
+    private final TaskRepository taskRepository;
 
     @PostMapping
     public ResponseEntity<TaskResponse> create(@RequestBody @Valid final CreateTaskRequest request) {
@@ -124,6 +130,14 @@ public class TaskController {
                                        @RequestBody @Valid final CreateTaskRequest request) {
         Task task = taskService.update(id, request);
         return new ResponseEntity<>(task.getId().hashCode(), HttpStatus.OK);
+    }
+
+
+    @GetMapping("/bookings/before-checkin/{days}/{pageNumber}")
+    Page<BookingCheckinProjection> getAllBookingBeforeCheckinByDays(@PathVariable int days, @PathVariable int pageNumber) {
+        int pageSize = 1000;
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        return taskRepository.getAllBookingBeforeCheckinByDays(days, pageable);
     }
 
 

@@ -1,49 +1,47 @@
 package com.bulbul.spring.quartz.job.booking;
 
+import com.bulbul.spring.quartz.api_client.BookingClientService;
+import com.bulbul.spring.quartz.dto.response.PageResponse;
 import com.bulbul.spring.quartz.job.JobHandler;
-import com.bulbul.spring.quartz.repository.TaskRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component("bookingServiceHandler")
+@RequiredArgsConstructor
 public class BookingServiceHandler implements JobHandler {
 
-    @Autowired
-    private TaskRepository taskRepository;
+    private final BookingClientService bookingClientService;
 
     @Override
     public void handle(String id, String name, String group) {
         log.info("Running BookingHandler -> ID: {}, Name: {}, Group: {}", id, name, group);
 
-        long startTime = System.currentTimeMillis();  // Start timer
+        long startTime = System.currentTimeMillis();
 
-        int days = 3000;
-        int pageSize = 1000;
+        int days = 1;
         int pageNumber = 0;
 
         try {
-            Page<BookingCheckinProjection> page;
+            PageResponse<BookingCheckinProjectionImpl> page;
             do {
-                Pageable pageable = PageRequest.of(pageNumber, pageSize);
-                page = taskRepository.getAllBookingBeforeCheckinByDays(days, pageable);
+                page = bookingClientService.getBookingsBeforeCheckin(days, pageNumber).block();
 
-                for (BookingCheckinProjection bookingCheckinProjection : page.getContent()) {
-                    sendPushNotification(bookingCheckinProjection);
+                assert page != null;
+                for (BookingCheckinProjection booking : page.getContent()) {
+                    sendPushNotification(booking);
                 }
 
                 pageNumber++;
-            } while (page.hasNext());
+            } while (!page.isLast());
 
-            long endTime = System.currentTimeMillis();    // End timer
-            long duration = endTime - startTime;          // Calculate duration in milliseconds
-
+            long duration = System.currentTimeMillis() - startTime;
+            //convert to minute and seconds
+            log.info("BookingHandler finished in {} ms ({} minutes)", duration, duration / 60000.0);
             log.info("BookingHandler finished in {} ms ({} seconds)", duration, duration / 1000.0);
+            log.info("total pages: {}", pageNumber);
 
         } catch (Exception e) {
             log.error("Error running BookingHandler", e);
@@ -51,8 +49,8 @@ public class BookingServiceHandler implements JobHandler {
     }
 
     @Async
-    public void sendPushNotification(BookingCheckinProjection bookingCheckinProjection) {
-        log.info("Sending push notification to user {} with token {}", bookingCheckinProjection.getUserId(), bookingCheckinProjection.getFcmToken());
-        // Integrate real push notification logic here
+    public void sendPushNotification(BookingCheckinProjection booking) {
+        log.info("Sending push notification to user {} with token {}", booking.getUserId(), booking.getFcmToken());
+        // Add actual push notification logic here
     }
 }
